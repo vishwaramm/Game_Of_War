@@ -8,3 +8,5 @@ class Player {
     this.currentCard = null;
   }
 }
+
+export default Player;

@@ -8,8 +8,8 @@
     "react-scripts": "^1.1.5"
   },
   "devDependencies": {
-    "react": "^16.5.2",
-    "react-dom": "^16.5.2"
+    "react": "^16.9.0",
+    "react-dom": "^16.9.0"
   },
   "scripts": {
     "start": "react-scripts start",

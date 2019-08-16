@@ -3,3 +3,44 @@ body {
   padding: 0;
   font-family: sans-serif;
 }
+
+.clearfix {
+  clear: both;
+}
+
+.game.war-cards {
+  width: 90%;
+  margin: 0 auto;
+}
+
+.game.war-cards > .players {
+  display: block;
+}
+
+.game.war-cards > .players > .player {
+  text-align: center;
+  width: 46%;
+  float: left;
+  margin-right: 1%;
+  margin-left: 1%;
+}
+
+.game.war-cards > .players > .player > .player-deck {
+  margin: 0 auto;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  height: 200px;
+  width: 150px;
+}
+
+.game.war-cards > .player > .player-deck:not(.face-up) {
+  cursor: pointer;
+}
+
+.messages {
+  text-align: center;
+  border: 1px solid #ccc;
+  background-color: #1168ff;
+  padding: 10px;
+  color: #fff;
+}

@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React from "react";
 
 const UICard = ({ card, onClick }) => {
   if (card.isFaceDown) {
@@ -13,9 +13,10 @@ const UICard = ({ card, onClick }) => {
     );
   } else {
     return (
-      <li key={card.id} className="card face-up">
-        <span className="suit">{card.suit}</span>
-        <span className="rank">{card.rank}</span>
+      <li className="card face-up">
+        <div className="suit" />
+        <div className="rank" />
+        <p className="name">{card.displayName()}</p>
       </li>
     );
   }
