@@ -2,10 +2,83 @@ body {
   margin: 0;
   padding: 0;
   font-family: sans-serif;
+  background: #00a651;
 }
 
 .clearfix {
   clear: both;
+}
+
+.card {
+  position: relative;
+  margin-right: 10px;
+  width: 150px;
+  height: 220px;
+  border-radius: 10px;
+  background: #fff;
+  -webkit-box-shadow: 3px 3px 7px rgba(0, 0, 0, 0.3);
+  box-shadow: 3px 3px 7px rgba(0, 0, 0, 0.3);
+}
+
+.card p {
+  text-align: center;
+  font: 100px/220px Georgia, Times New Roman, serif;
+  margin: 0;
+  padding: 0;
+}
+
+.diamonds,
+.hearts {
+  color: #ff0000;
+}
+
+.clubs,
+.spades {
+  color: #000;
+}
+
+.diamonds:before,
+.diamonds:after {
+  content: "♦";
+  color: #ff0000;
+}
+
+.hearts:before,
+.hearts:after {
+  content: "♥";
+  color: #ff0000;
+}
+
+.clubs:before,
+.clubs:after {
+  content: "♣";
+  color: #000;
+}
+
+.spades:before,
+.spades:after {
+  content: "♠";
+  color: #000;
+}
+
+*[class*="hearts"]:before,
+*[class*="diamonds"]:before,
+*[class*="clubs"]:before,
+*[class*="spades"]:before {
+  position: absolute;
+  font-size: 35px;
+  left: 5px;
+  top: 5px;
+}
+
+*[class*="hearts"]:after,
+*[class*="diamonds"]:after,
+*[class*="clubs"]:after,
+*[class*="spades"]:after {
+  position: absolute;
+  font-size: 35px;
+  right: 5px;
+  bottom: 5px;
 }
 
 .game.war-cards {
@@ -25,15 +98,7 @@ body {
   margin-left: 1%;
 }
 
-.game.war-cards > .players > .player > .player-deck {
-  margin: 0 auto;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  height: 200px;
-  width: 150px;
-}
-
-.game.war-cards > .player > .player-deck:not(.face-up) {
+.game.war-cards > .player > .card:not(.face-up) {
   cursor: pointer;
 }
 

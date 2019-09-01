@@ -1,27 +1,21 @@
 import React, { Component } from "react";
 import Deck from "../classes/deck";
 import Player from "../classes/player";
-import UIDeck from "./UIDeck";
-
-class Round {
-  constructor() {
-    this.round = 0;
-    this.winner = "";
-    this.messages = [];
-  }
-}
+import PlayerDeck from "./player-deck";
+import Round from "../classes/round";
 
 class War extends Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      deck: new Deck(),
+      deck: new Deck({ includeJoker: true }),
       players: [],
       rounds: [],
       messages: []
     };
 
+    //TODO: Allow the UI to add players
     this.state.players.push(new Player({ name: "vish" }));
     this.state.players.push(new Player({ name: "The Robot" }));
     this.deal();
@@ -70,7 +64,7 @@ class War extends Component {
     this.setState({ rounds });
   }
 
-  playNextCard(currentPlayer) {
+  playNextCard(currentPlayer, noState, noPlay) {
     //the player already has a card in play so cancel the click
     if (currentPlayer.currentCard != null) return false;
 
@@ -83,7 +77,7 @@ class War extends Component {
       this.message(`${currentPlayer.name} lost. Out of cards!`);
     }
 
-    //remove player and add back to array
+    //update player
     for (let i in players) {
       if (currentPlayer.name === players[i].name) {
         players[i] = currentPlayer;
@@ -91,7 +85,7 @@ class War extends Component {
       }
     }
 
-    this.setState({ players });
+    if (!noState) this.setState({ players });
 
     for (let i in players) {
       let p = players[i];
@@ -102,45 +96,16 @@ class War extends Component {
       }
     }
 
-    this.play();
+    if (!noPlay) this.play();
   }
 
   play() {
-    let cardsInPlay = [];
-    let faceDownCardsInPlay = [];
+    let cardsOnTable = [];
     let roundWinner = null;
-    let max = 0;
     let round = new Round();
-    let warEvent = {
-      exit: false
-    };
-
     let players = [...this.state.players];
     let messageQueue = [];
-
-    //players play their cards
-    for (let index in players) {
-      let player = players[index];
-
-      if (player.lost) continue; //the current player already lost (this is if there are more than 2 players)
-
-      if (player.currentCard == null) {
-        messageQueue.push(`${player.name} lost. Out of cards!`);
-        player.lost = true;
-        players[index] = player;
-        continue; //this player lost, they ran out of cards
-      }
-
-      cardsInPlay.push({
-        card: player.currentCard,
-        player: player
-      });
-
-      messageQueue.push(
-        `${player.name} played: ${player.currentCard.displayName()}`
-      );
-    }
-
+    /*
     if (cardsInPlay.length === 1) {
       //then someone ran out of cards
       let winner = cardsInPlay[0];
@@ -149,46 +114,20 @@ class War extends Component {
       this.prependRound(round);
       return; //game over
     }
+*/
+    roundWinner = this.coreGameLogic(players, cardsOnTable, messageQueue);
 
-    for (let index in cardsInPlay) {
-      let inPlay = cardsInPlay[index];
-
-      if (inPlay.card.rank > max) {
-        max = inPlay.card.rank;
-        roundWinner = inPlay;
-      } else if (inPlay.card.rank === max) {
-        let warWinner = this._handleWar(
-          roundWinner,
-          inPlay,
-          faceDownCardsInPlay,
-          warEvent
-        );
-
-        if (warEvent.exit) break; //war told us to exit loop
-
-        if (warWinner) {
-          roundWinner = warWinner;
-        }
-      }
+    for (let index in cardsOnTable) {
+      roundWinner.cards.unshift(cardsOnTable[index]);
     }
 
-    if (warEvent.exit) return; //end game, war told us to end the game
-
-    for (let index in cardsInPlay) {
-      roundWinner.player.cards.unshift(cardsInPlay[index].card);
-    }
-
-    for (let index in faceDownCardsInPlay) {
-      roundWinner.player.cards.unshift(faceDownCardsInPlay[index]);
-    }
-
-    roundWinner.player.roundWins++;
+    roundWinner.roundWins++;
 
     var roundWinnerIndex = players.findIndex(function(current, index) {
-      return current.name === roundWinner.player.name;
+      return current.name === roundWinner.name;
     });
 
-    players[roundWinnerIndex] = roundWinner.player;
+    players[roundWinnerIndex] = roundWinner;
     let context = this;
 
     setTimeout(function() {
@@ -199,83 +138,141 @@ class War extends Component {
       context.setState({
         players: players
       });
-    }, 5000);
+    }, 3000);
 
-    round.winner = roundWinner.player.name;
+    round.winner = roundWinner.name;
     round.messages = messageQueue;
     this.prependRound(round);
   }
 
-  _handleWar(player1, player2, faceDownCardsInPlay, e) {
-    let card1 = { rank: 0 };
-    let card2 = { rank: 0 };
-    let messageQueue = [];
+  coreGameLogic(players, cardsOnTable, messageQueue) {
+    let roundWinner = players[0];
+    let playersInWar = {};
+
+    messageQueue.push(
+      `${roundWinner.name} played: ${roundWinner.currentCard.displayName()}`
+    );
+
+    cardsOnTable.push(roundWinner.currentCard);
+
+    //players play their cards
+    for (let index = 1; index < players.length; index++) {
+      let player = players[index];
+
+      if (player.lost) continue; //the current player already lost (this is if there are more than 2 players)
+
+      messageQueue.push(
+        `${player.name} played: ${player.currentCard.displayName()}`
+      );
+
+      var comparisonResult = this.compareCards(
+        player.currentCard,
+        roundWinner.currentCard
+      );
+
+      switch (comparisonResult) {
+        case 1: //first card won
+          roundWinner = player;
+          break;
+        case 2: //second card won
+          //roundWinner already set
+          break;
+        case 0: //war
+          playersInWar[roundWinner.name] = roundWinner;
+          playersInWar[player.name] = player;
+          break;
+        default:
+          break;
+      }
+
+      cardsOnTable.push(player.currentCard);
+    }
+
+    let warPlayers = [];
+    for (let prop in playersInWar) {
+      let player = playersInWar[prop];
+      player.currentCard = null;
+
+      warPlayers.push(player);
+    }
+
+    if (warPlayers.length > 0) {
+      let warWinner = this.oneRoundOfWar(
+        warPlayers,
+        cardsOnTable,
+        messageQueue
+      );
+
+      //if we have players in war and the roundWinner is not in the war,
+      //then the roundWinner gets all the cards from war
+      if (
+        warWinner != null &&
+        warPlayers.filter(function(p) {
+          return p.name === roundWinner.name;
+        }).length > 0
+      ) {
+        roundWinner = warWinner;
+      }
+    }
+
+    return roundWinner;
+  }
+
+  compareCards(card1, card2) {
+    if (card1.rank > card2.rank) {
+      return 1;
+    } else if (card2.rank > card1.rank) {
+      return 2;
+    } else {
+      return 0;
+    }
+  }
+
+  oneRoundOfWar(players, cardsOnTable, messageQueue) {
     let winner = null;
 
     messageQueue.push(`1-2-3-4 I de-clare WAR!`);
 
-    while (card1.rank === card2.rank) {
-      let faceDownCard1 = player1.player.cards.pop();
+    for (let i = 0; i < players.length; i++) {
+      let player = players[i];
 
-      if (!faceDownCard1) {
-        messageQueue.push(
-          `${player1.player.name} lost! Ran out of cards during war.`
-        );
-        messageQueue.push(`${player2.player.name} is the winner!`);
-        e.exit = true; //tell caller to exit loop
-        break;
-      }
+      if (player.lost) continue;
 
-      let faceDownCard2 = player2.player.cards.pop();
+      for (let x = 0; x < 4; x++) {
+        let faceDownCard = player.cards.pop();
+        cardsOnTable.push(faceDownCard);
 
-      if (!faceDownCard2) {
-        messageQueue.push(
-          `${player2.player.name} lost! Ran out of cards during war.`
-        );
+        if (!faceDownCard) {
+          messageQueue.push(
+            `${player.name} lost! Ran out of cards during war.`
+          );
 
-        messageQueue.push(`${player1.player.name} is the winner!`);
-        e.exit = true; //tell caller to exit loop
-        break;
-      }
-
-      faceDownCardsInPlay.push(faceDownCard1);
-      faceDownCardsInPlay.push(faceDownCard2);
-
-      let cardInPlay1 = player1.player.cards.pop();
-
-      if (!cardInPlay1) {
-        messageQueue.push(
-          `${player1.player.name} lost! Ran out of cards during war.`
-        );
-        messageQueue.push(`${player2.player.name} is the winner!`);
-        e.exit = true; //tell caller to exit loop
-        break;
-      }
-
-      let cardInPlay2 = player2.player.cards.pop();
-
-      if (!cardInPlay2) {
-        messageQueue.push(
-          `${player2.player.name} lost! Ran out of cards during war.`
-        );
-        messageQueue.push(`${player1.player.name} is the winner!`);
-        e.exit = true; //tell caller to exit loop
-        break;
-      }
-
-      faceDownCardsInPlay.push(cardInPlay1);
-      faceDownCardsInPlay.push(cardInPlay2);
-
-      if (card1.rank > card2.rank) {
-        winner = player1;
-        break;
-      } else if (card1.rank < card2.rank) {
-        winner = player2;
-        break;
+          player.lost = true;
+        }
       }
     }
 
-    this.message(messageQueue);
+    let remainingPlayers = players.filter(function(p) {
+      return p.lost === false;
+    });
+
+    if (remainingPlayers.length === 1) {
+      messageQueue.push(
+        `${
+          remainingPlayers[0].name
+        } won the war. The rest of players ran out of cards.`
+      );
+      return remainingPlayers[0]; //the winner by default
+    } else if (remainingPlayers.length === 0) {
+      messageQueue.push(`All players in war lost.`);
+      return null; //no one won, they all lost
+    }
+
+    for (let index in remainingPlayers) {
+      this.playNextCard(remainingPlayers[index], true, true);
+    }
+
+    winner = this.coreGameLogic(remainingPlayers, cardsOnTable, messageQueue);
 
     return winner;
   }
@@ -308,7 +305,7 @@ class War extends Component {
 
   renderPlayers() {
     const playerDecks = this.state.players.map(p => (
-      <UIDeck
+      <PlayerDeck
         key={p.name}
         player={p}
         onCardClick={card => {
